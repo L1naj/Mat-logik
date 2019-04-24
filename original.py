@@ -37,7 +37,8 @@ def format_per(f):
 
 def replac(f):
     #f = format_per(f)
-    f = f.replace("$","1+") 
+    f = f.replace("$","1+")
+    f = f.replace("&","*") 
     while "@" in f:
         n = -1
         for i in f.split("@")[0]:
@@ -71,6 +72,39 @@ def replac(f):
                 shet = 1
         body = "1+("+body+"))"
         f = f[:slice_ot]+body+f[slice_za:]
+    while "|" in f:
+        n = -1
+        for i in f.split("|")[0]:
+            if i == "(" or i == ")":
+                n += 1
+        nymer_skob = skobki(f)
+        for e in nymer_skob:
+            if n in e:
+                skobka_ot = e[0]-1
+            if n+1 in e:
+                skobka_za = e[1]
+        nom0 = -1
+        slice_ot = 0
+        slice_za = 0
+        for i in f:
+            if nom0 < skobka_za:
+                if nom0 < skobka_ot:
+                    if i == "(" or i == ")":
+                        nom0 += 1
+                    slice_ot += 1
+                    slice_za += 1
+                else:
+                    if i == "(" or i == ")":
+                        nom0 += 1
+                    slice_za += 1
+        body = f[slice_ot:slice_za]
+        shet = 0
+        for kol in range (len(body)):  
+            if body[kol] == "|" and shet == 0:
+                body = body[:kol]+"+1)*(1+"+body[(kol+1):]
+                shet = 1
+        body = "1+(("+body+"))"
+        f = f[:slice_ot]+body+f[slice_za:]
     return f
 
 def calc(f,x):
@@ -90,7 +124,7 @@ def glavnaya(f):
         x = [0]*(arn)
         v = str(bin(i))[2:]
         for k in range (len(v)):
-            x[k]=int(v[len(v)-k-1])  
+            x[k]=int(v[len(v)-k-1])
         if calc(f,x) == 0:
             print("Принимает 0 на векторе "+str(x))
             return False
@@ -116,9 +150,44 @@ def acs_A2(F,G,H):
     lister.write(Res,"A2 for "+F+" and "+G+" and "+H)
     return Res
 
-def acs_A3(F,G):
-    Res = "((($"+G+")@($"+F+"))@((($"+G+")@"+F+")@"+G+"))"
-    lister.write(Res,"A3 for "+F+" and "+G)
+def acs_A3(A,B):
+    Res = "("+A+"@("+A+"|"+B+"))"
+    lister.write(Res,"A3 for "+A+" and "+B)
+    return Res
+
+def acs_A4(A,B):
+    Res = "("+B+"@("+A+"|"+B+"))"
+    lister.write(Res,"A4 for "+A+" and "+B)
+    return Res
+
+def acs_A5(A,B,C):
+    Res = "(("+A+"@"+C+")@(("+B+"@"+C+")@(("+A+"|"+B+")@"+C+")))"
+    lister.write(Res,"A5 for "+A+" and "+B+" and "+C)
+    return Res
+
+def acs_A6(A,B):
+    Res = "(("+A+"&"+B+")@"+A+")"
+    lister.write(Res,"A6 for "+A+" and "+B)
+    return Res
+
+def acs_A7(A,B):
+    Res = "(("+A+"&"+B+")@"+B+")"
+    lister.write(Res,"A7 for "+A+" and "+B)
+    return Res
+
+def acs_A8(A,B,C):
+    Res = "(("+A+"@"+B+")@(("+A+"@"+C+")@("+A+"@"+"("+B+"&"+C+"))))"
+    lister.write(Res,"A8 for "+A+" and "+B+" and "+C)
+    return Res
+
+def acs_A9(A,B):
+    Res = "(("+A+"@"+B+")@(("+A+"@($"+B+"))@($"+A+")))"
+    lister.write(Res,"A9 for "+A+" and "+B)
+    return Res
+
+def acs_A10(A):
+    Res = "(($($"+A+"))@"+A+")"
+    lister.write(Res,"A10 for "+A)
     return Res
 
 def teor_L(F):
@@ -179,128 +248,141 @@ def f_alpha(f, a):
     if calc(f,a) == 1:
         return f
     return "($"+f+")"
-        
-def nasl_S1(F,G,H):
-    Gamma = ["("+F+"@"+G+")","("+G+"@"+H+")"]
-    Vivod = []
-    for g in Gamma:
-        Vivod.append(g)
-    Vivod.append(F)
-    Vivod.append(MP(Vivod[2],Vivod[0]))
-    Vivod.append(MP(Vivod[3],Vivod[1]))
-    return teor_deduc(Gamma,F,H,Vivod)
 
-def nasl_S2(F,G,H):
-    Gamma = ["("+F+"@("+G+"@"+H+"))",G]
-    Vivod = []
-    for g in Gamma:
-        Vivod.append(g)
-    Vivod.append(F)
-    Vivod.append(MP(Vivod[2],Vivod[0]))
-    Vivod.append(MP(Vivod[1],Vivod[3]))
-    return teor_deduc(Gamma,F,H,Vivod)
+def teor_T2(A):
+    F1 = A
+    F2 = acs_A1(A,"($"+A+")")
+    F3 = MP(F1,F2)
+    F4 = teor_L("($"+A+")")
+    F5 = acs_A9("($"+A+")",A)
+    F6 = MP(F3,F5)
+    F7 = MP(F4,F6)
+    F8 = teor_deduc([],A,F7,[F1,F2,F3,F4,F5,F6,F7])
+    return [[],F8[1]]
 
-def teor_T1(F):
-    Vivod = []
-    Vivod.append(acs_A3("($"+F+")",F))
-    Vivod.append(teor_L("($"+F+")"))
-    Vivod.append(nasl_S2("(($"+F+")@($($"+F+")))",Vivod[1],F)[1])
-    Vivod.append(acs_A1("($($"+F+"))","($"+F+")"))
-    Vivod.append(nasl_S1("($($"+F+"))","(($"+F+")@($($"+F+")))",F)[1])
-    return [[],Vivod[4]]
+def shtuka(F,G):
+    F1 = F
+    F2 = "($"+F+")"
+    F3 = acs_A1(F1,"($"+G+")")
+    F4 = acs_A1(F2,"($"+G+")")
+    F5 = MP(F1,F3)
+    F6 = MP(F2,F4)
+    F7 = acs_A9("($"+G+")",F1)
+    F8 = MP(F5,F7)
+    F9 = MP(F6,F8)
+    F10 = acs_A10(G)
+    F11 = MP(F9,F10)
+    F12 = teor_deduc(["($"+G+")","($"+F+")"],F,G,[F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11])
+    return [F12[0],F12[1]]
 
-def teor_T2(F):
-    Vivod = []
-    Vivod.append(acs_A3(F,"($($"+F+"))"))
-    Vivod.append(teor_T1("($"+F+")")[1])
-    Vivod.append(MP(Vivod[1],Vivod[0]))
-    Vivod.append(acs_A1(Vivod[1],Vivod[0]))
-    Vivod.append(nasl_S1(F,"(($($($"+F+")))@"+F+")","($($"+F+"))")[1])
-    return [[],Vivod[4]]
+def shtuka2(F,G):
+    F1 = F
+    F2 = "($"+F+")"
+    F3 = acs_A1(F1,"($"+G+")")
+    F4 = acs_A1(F2,"($"+G+")")
+    F5 = MP(F1,F3)
+    F6 = MP(F2,F4)
+    F7 = acs_A9("($"+G+")",F1)
+    F8 = MP(F5,F7)
+    F9 = MP(F6,F8)
+    F10 = acs_A10(G)
+    F11 = MP(F9,F10)
+    T = teor_deduc([F2],F1,F11,[F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11])
+    F12 = T[1]
+    Vivod = [F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11]
+    Vivod.extend(T[2])
+    Gamma = T[0][0]
+    F13 = teor_deduc([],Gamma,F12,Vivod)[1]
+    return [[],F13]
 
-def teor_T3(F,G):
-    Vivod = []
-    Vivod.append("($"+F+")")
-    Vivod.append(acs_A1(F,"($"+G+")"))
-    Vivod.append(MP(F,Vivod[1]))
-    Vivod.append(acs_A1(Vivod[0],"($"+G+")"))
-    Vivod.append(MP(Vivod[0],Vivod[3]))
-    Vivod.append(acs_A3(F,G))
-    Vivod.append(MP(Vivod[4],Vivod[5]))
-    Vivod.append(MP(Vivod[2],Vivod[6]))
-    out = teor_deduc([Vivod[0]],F,Vivod[7],[Vivod[0],Vivod[1],Vivod[2],Vivod[2],Vivod[3],Vivod[4],Vivod[5],Vivod[6],Vivod[7]])
-    out = teor_deduc([],Vivod[0],out[1],out[2])
-    return [[],out[1]]
+def vprava_2(A,B):
+    F1 = acs_A9("("+A+"|"+B+")",A)
+    F2 = shtuka(B,A)[1]
+    F3 = acs_A5(A,B,A)
+    F4 = teor_L(A)
+    F5 = MP(F4,F3)
+    F6 = MP(F2,F5)
+    F7 = MP(F6,F1)
+    F8 = acs_A1("($"+A+")","("+A+"|"+B+")")
+    F9 = "($"+A+")"
+    F10 = MP(F9,F8)
+    F11 = MP(F10,F7)
+    T = teor_deduc(["($"+A+")"],"($"+B+")",F11,[F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11])
+    F12 = T[1]
+    Vivod = [F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11]
+    Vivod.extend(T[2])
+    Gamma = T[0][0]
+    F13 = teor_deduc([],Gamma,F12,Vivod)[1]
+    return [[],F13]
 
-def teor_T4(F,G):
-    Vivod = []
-    Vivod.append(acs_A3(F,G))
-    Vivod.append("(($"+G+")@($"+F+"))")
-    Vivod.append(MP(Vivod[1],Vivod[0]))
-    Vivod.append(acs_A1(F,"($"+G+")"))
-    Vivod.append(nasl_S1(F,"(($"+G+")@"+F+")",G)[1])
-    not_out = nasl_S1(F,"(($"+G+")@"+F+")",G)[2]
-    out = [Vivod[0],Vivod[1],Vivod[2],Vivod[3]]
-    out.extend(not_out)
-    out = teor_deduc([],Vivod[1],Vivod[4],out)
-    return [[],out[1]]
+def priklad_2(A,B):
+    F1 = acs_A1("($"+B+")",A)
+    F2 = "($"+B+")"
+    F3 = MP(F2,F1)
+    F4 = acs_A9(A,B)
+    F5 = "("+A+"@"+B+")"
+    F6 = MP(F5,F4)
+    F7 = MP(F3,F6)
+    T = teor_deduc([F5],F2,"($"+A+")",[F1,F2,F3,F4,F5,F6,F7])
+    F8 = T[1]
+    Vivod = [F1,F2,F3,F4,F5,F6,F7]
+    Vivod.extend(T[2])
+    Gamma = T[0][0]
+    F9 = teor_deduc([],Gamma,F8,Vivod)[1]
+    return [[],F9]
 
-def teor_T5(F,G):
-    Vivod = []
-    Vivod.append(acs_A3("($"+G+")","($"+F+")"))
-    Vivod.append("("+F+"@"+G+")")
-    Vivod.append(teor_T2(G)[1])
-    Vivod.append(nasl_S1(F,G,"($($"+G+"))")[1])
-    out = nasl_S1(F,G,"($($"+G+"))")[2]
-    Vivod.append(teor_T1(F)[1])
-    Vivod.append(nasl_S1("($($"+F+"))",F,"($($"+G+"))")[1])
-    out.extend(nasl_S1("($($"+F+"))",F,"($($"+G+"))")[2])
-    Vivod.append(MP(Vivod[5],Vivod[0]))
-    Vivod.append(acs_A1("($"+G+")","($($"+F+"))"))
-    Vivod.append(nasl_S1("($"+G+")","(($($"+F+"))@($"+G+"))","($"+F+")")[1])
-    out.extend(nasl_S1("($"+G+")","(($($"+F+"))@($"+G+"))","($"+F+")")[2])
-    out = teor_deduc([],Vivod[1],Vivod[8],out)
-    return [[],out[1]]
+def vprava_3(A,B):
+    F1 = "("+A+"@"+B+")"
+    F2 = "(($"+A+")@"+B+")"
+    F3 = acs_A9("($"+B+")","($"+A+")")
+    F4 = priklad_2(A,B)[1]
+    F5 = MP(F1,F4)
+    F6 = MP(F5,F3)
+    F7 = priklad_2("($"+A+")",B)[1]
+    F8 = MP(F2,F7)
+    F9 = MP(F8,F6)
+    F10 = acs_A10(B)
+    F11 = MP(F9,F10)
+    T = teor_deduc([F1],F2,F11,[F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11])
+    F12 = T[1]
+    Vivod = [F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11]
+    Vivod.extend(T[2])
+    Gamma = T[0][0]
+    F13 = teor_deduc([],Gamma,F12,Vivod)[1]
+    return [[],F13]
+    
+def vprava_4(A,B):
+    F1 = acs_A8(A,A,B)
+    F2 = teor_L(A)
+    F3 = MP(F2,F1)
+    F4 = acs_A1(B,A)
+    F5 = A
+    F6 = B
+    F7 = MP(F6,F4)
+    F8 = MP(F7,F3)
+    F9 = MP(F5,F8)
+    T = teor_deduc([F5],F6,F9,[F1,F2,F3,F4,F5,F6,F7,F8,F9])
+    F10 = T[1]
+    Vivod = [F1,F2,F3,F4,F5,F6,F7,F8,F9]
+    Vivod.extend(T[2])
+    Gamma = T[0][0]
+    F11 = teor_deduc([],Gamma,F10,Vivod)[1]
+    return [[],F11]
 
-def teor_T6(F,G):
-    out = []
-    Vivod = []
-    Vivod.append(teor_T5("("+F+"@"+G+")",G)[1])
-    Vivod.append(teor_deduc([],"("+F+"@"+G+")",G,[F,"("+F+"@"+G+")",MP(F,"("+F+"@"+G+")")])[1])
-    out.extend(teor_deduc([],F,"("+F+"@"+G+")",[F,"("+F+"@"+G+")",MP(F,"("+F+"@"+G+")")])[2])
-    Vivod.append(MP(Vivod[1],Vivod[0]))
-    out.append(Vivod[2])
-    out = teor_deduc([],F,Vivod[2],out)
-    return [[],out[1]]
-
-def lema_kT7(F,G):
-    Vivod = []
-    Vivod.append("($"+F+")")
-    Vivod.append("(($"+F+")@"+G+")")
-    Vivod.append(MP(Vivod[0],Vivod[1]))
-    Vivod.append(teor_T2(G)[1])
-    Vivod.append(MP(Vivod[2],Vivod[3]))
-    Vivod.append(teor_deduc([Vivod[1],Vivod[2],Vivod[3]],Vivod[0],"($($"+G+"))",[Vivod[0],Vivod[1],Vivod[2],Vivod[3],Vivod[4]])[1])
-    out = teor_deduc([Vivod[1],Vivod[2],Vivod[3]],Vivod[0],"($($"+G+"))",[Vivod[0],Vivod[1],Vivod[2],Vivod[3],Vivod[4]])[2]
-    out = teor_deduc([],Vivod[1],Vivod[5],out)
-    return [[],out[1]]
-
-def teor_T7(F,G):
-    Vivod = []
-    Vivod.append("("+F+"@"+G+")")
-    Vivod.append(teor_T5(F,G)[1])
-    Vivod.append(acs_A3(F,G))
-    Vivod.append(nasl_S1(Vivod[0],"(($"+G+")@($"+F+"))","((($"+G+")@"+F+")@"+G+")")[1])
-    out = nasl_S1(Vivod[0],"(($"+G+")@($"+F+"))","((($"+G+")@"+F+")@"+G+")")[2]
-    Vivod.append(MP(Vivod[0],Vivod[3]))
-    Vivod.append(teor_T4("($"+G+")",F)[1])
-    Vivod.append(lema_kT7(F,G))
-    Vivod.append(nasl_S1("(($"+F+")@"+G+")","(($"+F+")@($($"+G+")))","(($"+G+")@"+F+")")[1])
-    out.extend(nasl_S1("(($"+F+")@"+G+")","(($"+F+")@($($"+G+")))","(($"+G+")@"+F+")")[2])
-    Vivod.append(nasl_S1("(($"+F+")@"+G+")","(($"+G+")@"+F+")",G)[1])
-    out.extend(nasl_S1("(($"+F+")@"+G+")","(($"+G+")@"+F+")",G)[2])
-    out = teor_deduc([],Vivod[0],Vivod[8],out)
-    return [[],out[1]]
+def priklad_k_kal(A,B):
+    F1 = A
+    F2 = "("+A+"@"+B+")"
+    F3 = acs_A1("("+A+"@"+B+")",A)
+    F4 = MP(F2,F3)
+    F5 = MP(F1,F4)
+    F6 = MP(F1,F5)
+    T = teor_deduc([F1],F2,F6,[F1,F2,F3,F4,F5,F6])
+    F7 = T[1]
+    Vivod = [F1,F2,F3,F4,F5,F6]
+    Vivod.extend(T[2])
+    Gamma = T[0][0]
+    F8 = teor_deduc([],Gamma,F7,Vivod)[1]
+    return [[],F8]
 
 def razbit(F):
     shab = r'\d+'
@@ -322,7 +404,13 @@ def razbit(F):
                 posit = i
         G = F[1:posit+2]
         H = F[posit+3:(len(F)-1)]
-        return [[G,H],1]    
+        if F[posit+2] == "@":
+            return [[G,H],1]
+        elif F[posit+2] == "&":
+            return [[G,H],3]
+        elif F[posit+2] == "|":
+            return [[G,H],4]
+
 
 def lema_Kal(F, alpha):
     out = []
@@ -335,14 +423,14 @@ def lema_Kal(F, alpha):
             else:
                 out.extend(lema_Kal(razbit(F)[0][0],alpha))
                 out.append(teor_T2(out[len(out)-1])[1])
-        else:
+        elif razbit(F)[1] == 1:
             A = razbit(F)[0]
             if calc(replac(A[0]),alpha) == 0:
                 out.extend(lema_Kal(A[0],alpha))
                 F1 = out[len(out)-1]
-                out.append(teor_T3(A[0],A[1])[1])
-                F2 = out[len(out)-1]
+                F2 = shtuka2(A[0],A[1])[1]
                 F3 = MP(F1,F2)
+                out.append(F2)
                 out.append(F3)
             elif calc(replac(A[1]),alpha) == 1:
                 out.extend(lema_Kal(A[1],alpha))
@@ -356,12 +444,63 @@ def lema_Kal(F, alpha):
                 F1 = out[len(out)-1]
                 out.extend(lema_Kal(A[1],alpha))
                 F2 = out[len(out)-1]
-                out.append(teor_T6(A[0],A[1])[1])
-                F3 = out[len(out)-1]
+                F3 = priklad_k_kal(A[0],A[1])[1]
                 F4 = MP(F1,F3)
-                out.append(F4)
+                F5 = priklad_2("("+A[0]+"@"+A[1]+")",A[1])[1]
+                F6 = MP(F4,F5)
+                F7 = MP(F2,F6)
+                out.extend([F3,F4,F5,F6,F7])
+
+        elif razbit(F)[1] == 3:
+            A = razbit(F)[0]
+            if calc(replac(A[0]),alpha) == 1 and calc(replac(A[1]),alpha) == 1:
+                out.extend(lema_Kal(A[0],alpha))
+                F1 = out[len(out)-1]
+                out.extend(lema_Kal(A[1],alpha))
+                F2 = out[len(out)-1]
+                F3 = vprava_4(F1,F2)[1]
+                F4 = MP(F1,F3)
                 F5 = MP(F2,F4)
-                out.append(F5)
+                out.extend([F3,F4,F5])
+            if calc(replac(A[0]),alpha) == 0:
+                out.extend(lema_Kal(A[0],alpha))
+                F1 = out[len(out)-1]
+                F2 = acs_A6(A[0],A[1])
+                F3 = priklad_2("("+A[0]+"&"+A[1]+")",A[0])[1]
+                F4 = MP(F2,F3)
+                F5 = MP(F1,F4)
+                out.extend([F2,F3,F4,F5])
+            if calc(replac(A[1]),alpha) == 0:
+                out.extend(lema_Kal(A[1],alpha))
+                F1 = out[len(out)-1]
+                F2 = acs_A7(A[0],A[1])
+                F3 = priklad_2("("+A[0]+"&"+A[1]+")",A[1])[1]
+                F4 = MP(F2,F3)
+                F5 = MP(F1,F4)
+                out.extend([F2,F3,F4,F5])
+        elif razbit(F)[1] == 4:
+            A = razbit(F)[0]
+            if calc(replac(A[0]),alpha) == 0 and calc(replac(A[1]),alpha) == 0:
+                out.extend(lema_Kal(A[0],alpha))
+                F1 = out[len(out)-1]
+                out.extend(lema_Kal(A[1],alpha))
+                F2 = out[len(out)-1]
+                F3 = vprava_2(A[0],A[1])[1]
+                F4 = MP(F1,F3)
+                F5 = MP(F2,F4)
+                out.extend([F3,F4,F5])
+            if calc(replac(A[0]),alpha) == 1:
+                out.extend(lema_Kal(A[0],alpha))
+                F1 = out[len(out)-1]
+                F2 = acs_A3(A[0],A[1])
+                F3 = MP(F1,F2)
+                out.extend([F2,F3])
+            if calc(replac(A[1]),alpha) == 1:
+                out.extend(lema_Kal(A[1],alpha))
+                F1 = out[len(out)-1]
+                F2 = acs_A4(A[0],A[1])
+                F3 = MP(F1,F2)
+                out.extend([F2,F3]) 
     return out
             
 def adekvat(F):
@@ -372,8 +511,7 @@ def adekvat(F):
     alphasp = alpha_sp(arn+1)
     for i in range (arn):
         out[i] = lema_Kal(F,alphasp[i])
-    while arn != 0:
-        arn -= 1
+    while arn != -1:
         alphasp = alpha_sp(arn+1)
         for i in range (arn):
             alphasp[i][len(alphasp[i])-1] = 1
@@ -387,32 +525,15 @@ def adekvat(F):
             vrem = teor_deduc(Gamma,f_alpha("(x["+str(arn)+"])",alphasp[i]),F,out[i])
             F2 = vrem[1]
             vivod_F2 = vrem[2]
-            F3 = teor_T7("(x["+str(arn)+"])",F)[1]
+            F3 = vprava_3("(x["+str(arn)+"])",F)[1]
             F4 = MP(F1,F3)
-            F5 = MP(F2.F4)
+            F5 = MP(F2,F4)
             res = vivod_F1
             res.extend(vivod_F2)
             res.append(F4)
             res.append(F5)
             out[i] = res
-    alphasp = [[0],[1]]
-    alpha = alphasp[1]
-    Gamma = []
-    vrem = teor_deduc(Gamma,f_alpha("(x[0])",alpha),F,out[0])
-    F1 = vrem[1]
-    vivod_F1 = vrem[2]
-    alpha = alphasp[0]
-    vrem = teor_deduc(Gamma,f_alpha("(x[0])",alpha),F,out[0])
-    F2 = vrem[1]
-    vivod_F2 = vrem[2]
-    F3 = teor_T7("(x[0])",F)[1]
-    F4 = MP(F1,F3)
-    F5 = MP(F2,F4)
-    res = vivod_F1
-    res.extend(vivod_F2)
-    res.append(F4)
-    res.append(F5)
-    out[0] = res
+        arn -= 1
     return res
 
 
@@ -424,12 +545,9 @@ def adekvat(F):
 
 while True:
     logik = input("Введите выражение(@ - импликация, $ - заперечення,\nпеременную под номером n обозначать xn, все брать в скобки): ")
-    logik = format_per(logik)
-
-    print(logik)
-    if glavnaya(logik):
+    #logik = format_per(logik)
+    print(adekvat(logik))
+    '''if glavnaya(logik):
         print("Тавтология")
     else:
-        print("Не тавтология")
-
-    print(adekvat(logik))
+        print("Не тавтология")'''
